@@ -110,10 +110,9 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         if (!array_key_exists('server', $configuration) || empty($configuration['server'])) {
             return;
         }
-        $this->prefix  = !empty($configuration['prefix']) ? $configuration['prefix'] : '';
-        $this->server  = $configuration['server'];
-        $this->redis   = $this->new_redis();
-        $this->isready = $this->ping();
+        $this->prefix = !empty($configuration['prefix']) ? $configuration['prefix'] : '';
+        $this->server = $configuration['server'];
+        $this->redis  = $this->new_redis();
     }
 
     /**
@@ -137,20 +136,29 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      */
     protected function new_redis() {
         $redis = new Redis();
-        $redis->connect($this->server);
-        $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+        if ($redis->connect($this->server)) {
+            $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
 
+            if ($this->isready === false) {
+                $this->isready = $this->ping($redis);
+            }
+        } else {
+            $this->isready = false;
+        }
         return $redis;
     }
 
     /**
      * See if we can ping Redis server
      *
+     * @param Redis $redis
      * @return bool
      */
-    protected function ping() {
+    protected function ping(Redis $redis) {
         try {
-            $this->redis->ping();
+            if ($redis->ping() === false) {
+                return false;
+            }
         } catch (Exception $e) {
             return false;
         }
