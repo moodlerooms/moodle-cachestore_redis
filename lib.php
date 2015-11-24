@@ -104,7 +104,12 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     public function __construct($name, array $configuration = array()) {
         $this->name = $name;
 
-        if (!array_key_exists('server', $configuration) || empty($configuration['server'])) {
+        // During unit test purge, it goes off process and no config is passed.
+        if (PHPUNIT_TEST && empty($configuration)) {
+            // The name is important because it is part of the prefix.
+            $this->name    = self::get_testing_name();
+            $configuration = self::get_testing_configuration();
+        } else if (!array_key_exists('server', $configuration) || empty($configuration['server'])) {
             return;
         }
         $prefix = !empty($configuration['prefix']) ? $configuration['prefix'] : '';
@@ -222,13 +227,17 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     /**
      * Set the values of many keys.
      *
-     * @param array $keyvalues An array of key/value pairs. Each item in the array is an associative array
+     * @param array $keyvaluearray An array of key/value pairs. Each item in the array is an associative array
      *      with two keys, 'key' and 'value'.
      * @return int The number of key/value pairs successfuly set.
      */
-    public function set_many(array $keyvalues) {
-        if ($this->redis->hMSet($this->hash, $keyvalues)) {
-            return count($keyvalues);
+    public function set_many(array $keyvaluearray) {
+        $pairs = [];
+        foreach ($keyvaluearray as $pair) {
+            $pairs[$pair['key']] = $pair['value'];
+        }
+        if ($this->redis->hMSet($this->hash, $pairs)) {
+            return count($pairs);
         }
         return 0;
     }
@@ -240,7 +249,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return bool True if the delete operation succeeds, false otherwise.
      */
     public function delete($key) {
-        return ($this->redis->hDel($this->hash, $key) !== false);
+        return ($this->redis->hDel($this->hash, $key) > 0);
     }
 
     /**
@@ -376,7 +385,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @param string $ownerid Owner information to use.
      * @return bool True if the lock is released, false if it is not.
      */
-    public function release_lock($key, $ownerid) { 
+    public function release_lock($key, $ownerid) {
         if ($this->check_lock_state($key, $ownerid)) {
             return ($this->redis->del($key) !== false);
         }
@@ -406,5 +415,51 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         $data['server'] = $config['server'];
         $data['prefix'] = !empty($config['prefix']) ? $config['prefix'] : '';
         $editform->set_data($data);
+    }
+
+    public static function initialise_unit_test_instance(cache_definition $definition) {
+        if (!self::are_requirements_met()) {
+            return false;
+        }
+        if (!self::ready_to_be_used_for_testing()) {
+            return false;
+        }
+
+        $store = new cachestore_redis(self::get_testing_name(), self::get_testing_configuration());
+        if (!$store->is_ready()) {
+            return false;
+        }
+        $store->initialise($definition);
+
+        return $store;
+    }
+
+    public static function ready_to_be_used_for_testing() {
+        return defined('CACHESTORE_REDIS_TEST_SERVER');
+    }
+
+    /**
+     * Return configuration to use when unit testing.
+     *
+     * @return array
+     * @throws coding_exception
+     */
+    private static function get_testing_configuration() {
+        if (!self::are_requirements_met()) {
+            throw new coding_exception('Redis cache store not setup for testing');
+        }
+        return [
+            'server' => CACHESTORE_REDIS_TEST_SERVER,
+            'prefix' => 'phpu_',
+        ];
+    }
+
+    /**
+     * Get the name to use when unit testing.
+     *
+     * @return string
+     */
+    private static function get_testing_name() {
+        return 'test_application';
     }
 }
