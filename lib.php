@@ -444,7 +444,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return array
      * @throws coding_exception
      */
-    private static function get_testing_configuration() {
+    public static function get_testing_configuration() {
         if (!self::are_requirements_met()) {
             throw new coding_exception('Redis cache store not setup for testing');
         }
