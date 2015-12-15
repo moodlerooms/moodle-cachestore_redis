@@ -445,12 +445,14 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @throws coding_exception
      */
     public static function get_testing_configuration() {
+        global $DB;
+
         if (!self::are_requirements_met()) {
             throw new coding_exception('Redis cache store not setup for testing');
         }
         return [
             'server' => CACHESTORE_REDIS_TEST_SERVER,
-            'prefix' => 'phpu_',
+            'prefix' => $DB->get_prefix(),
         ];
     }
 
