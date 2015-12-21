@@ -107,8 +107,9 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         if (!array_key_exists('server', $configuration) || empty($configuration['server'])) {
             return;
         }
+        $password = !empty($configuration['password']) ? $configuration['password'] : '';
         $prefix = !empty($configuration['prefix']) ? $configuration['prefix'] : '';
-        $this->redis = $this->new_redis($configuration['server'], $prefix);
+        $this->redis = $this->new_redis($configuration['server'], $password, $prefix);
     }
 
     /**
@@ -116,11 +117,15 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * connect to the server.
      *
      * @param string $server The server connection string
+     * @param string $password The server password string
      * @param string $prefix The key prefix
      * @return Redis
      */
-    protected function new_redis($server, $prefix = '') {
+    protected function new_redis($server, $password = '', $prefix = '') {
         $redis = new Redis();
+        if($password != '') { // connect with a password if we have one
+            $redis->auth($password);
+        }
         if ($redis->connect($server)) {
             $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
             $redis->setOption(Redis::OPT_PREFIX, $prefix.$this->name.'-');

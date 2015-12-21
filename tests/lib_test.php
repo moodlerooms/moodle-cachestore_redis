@@ -15,10 +15,12 @@ class cachestore_redis_test extends basic_testcase {
         if (!cachestore_redis::are_requirements_met()) {
             $this->markTestSkipped('Requirements for Redis cache store are not met');
         }
-        $this->store = new cachestore_redis('test', array(
-            'server' => CACHESTORE_REDIS_TEST_SERVER,
-            'prefix' => 'phpunit',
-        ));
+        $configuration = array('server' => CACHESTORE_REDIS_TEST_SERVER,
+                               'prefix' => 'phpunit');
+        if(defined('CACHESTORE_REDIS_TEST_SERVER_PASSWORD')) {
+            $configuration['password'] = CACHESTORE_REDIS_TEST_SERVER_PASSWORD;
+        }
+        $this->store = new cachestore_redis('test', $configuration);
         $this->store->initialise(cache_definition::load_adhoc(cache_store::MODE_APPLICATION, 'foo_bar', 'baz'));
     }
 

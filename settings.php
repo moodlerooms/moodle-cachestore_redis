@@ -20,3 +20,13 @@ $settings->add(
     16
   )
 );
+$settings->add(
+  new admin_setting_configtext(
+    'cachestore_redis/test_server_password',
+    get_string('test_server_password', 'cachestore_redis'),
+    get_string('test_server_password_desc', 'cachestore_redis'),
+    '',
+    PARAM_TEXT,
+    16
+  )
+);
