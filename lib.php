@@ -1,11 +1,25 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Redis Cache Store - Main library
  *
- * @package     cachestore_redis
- * @copyright   2013 Adam Durana
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   cachestore_redis
+ * @copyright 2013 Adam Durana
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -295,10 +309,9 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         if (empty($config->test_server)) {
             return false;
         }
-        $cache_config = array();
-        $cache_config['server'] = $config->test_server;
-        $cache = new cachestore_redis('Redis test', $cache_config);
+        $cache = new cachestore_redis('Redis test', ['server' => $config->test_server]);
         $cache->initialise($definition);
+
         return $cache;
     }
 

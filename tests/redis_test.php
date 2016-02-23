@@ -76,7 +76,7 @@ class cachestore_redis_test extends cachestore_tests {
 
     public function test_has() {
         $store = $this->create_cachestore_redis();
-        
+
         $this->assertTrue($store->set('foo', 'bar'));
         $this->assertTrue($store->has('foo'));
         $this->assertFalse($store->has('bat'));
