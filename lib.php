@@ -96,7 +96,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return int
      */
     public static function get_supported_features(array $configuration = array()) {
-        return self::SUPPORTS_DATA_GUARANTEE;
+        return self::SUPPORTS_DATA_GUARANTEE + self::DEREFERENCES_OBJECTS;
     }
 
     /**
