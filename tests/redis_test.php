@@ -17,6 +17,11 @@
 /**
  * Redis cache test.
  *
+ * If you wish to use these unit tests all you need to do is add the following definition to
+ * your config.php file.
+ *
+ * define('TEST_CACHESTORE_REDIS_TESTSERVERS', '127.0.0.1');
+ *
  * @package   cachestore_redis
  * @copyright Copyright (c) 2015 Moodlerooms Inc. (http://www.moodlerooms.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

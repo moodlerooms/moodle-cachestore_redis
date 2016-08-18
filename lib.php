@@ -29,12 +29,9 @@ defined('MOODLE_INTERNAL') || die();
  *
  * @copyright   2013 Adam Durana
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @todo TTL support was removed, but might be able to add it back by setting
- *       the TTL on the hash key.  So, after a set, we could use http://redis.io/commands/pttl
- *       to see if the hash is set to expire, if not, set a TTL on it.  Must prevent it from
- *       doing it on every set though.
  */
-class cachestore_redis extends cache_store implements cache_is_key_aware, cache_is_lockable, cache_is_configurable {
+class cachestore_redis extends cache_store implements cache_is_key_aware, cache_is_lockable,
+        cache_is_configurable, cache_is_searchable {
     /**
      * Name of this store.
      *
@@ -86,7 +83,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return bool
      */
     public static function is_supported_mode($mode) {
-        return ($mode === self::MODE_APPLICATION);
+        return ($mode === self::MODE_APPLICATION || $mode === self::MODE_SESSION);
     }
 
     /**
@@ -96,7 +93,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return int
      */
     public static function get_supported_features(array $configuration = array()) {
-        return self::SUPPORTS_DATA_GUARANTEE;
+        return self::SUPPORTS_DATA_GUARANTEE + self::DEREFERENCES_OBJECTS + self::IS_SEARCHABLE;
     }
 
     /**
@@ -106,7 +103,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return int
      */
     public static function get_supported_modes(array $configuration = array()) {
-        return self::MODE_APPLICATION;
+        return self::MODE_APPLICATION + self::MODE_SESSION;
     }
 
     /**
@@ -142,8 +139,10 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         $redis = new Redis();
         if ($redis->connect($server)) {
             $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
-            $redis->setOption(Redis::OPT_PREFIX, $prefix.$this->name.'-');
-
+            if (!empty($prefix)) {
+                $redis->setOption(Redis::OPT_PREFIX, $prefix);
+            }
+            // Database setting option...
             $this->isready = $this->ping($redis);
         } else {
             $this->isready = false;
@@ -391,6 +390,32 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     }
 
     /**
+     * Finds all of the keys being used by this cache store instance.
+     *
+     * @return array of all keys in the hash as a numbered array.
+     */
+    public function find_all() {
+        return $this->redis->hKeys($this->hash);
+    }
+
+    /**
+     * Finds all of the keys whose keys start with the given prefix.
+     *
+     * @param string $prefix
+     *
+     * @return array List of keys that match this prefix.
+     */
+    public function find_by_prefix($prefix) {
+        $return = [];
+        foreach ($this->find_all() as $key) {
+            if (strpos($key, $prefix) === 0) {
+                $return[] = $key;
+            }
+        }
+        return $return;
+    }
+
+    /**
      * Releases a given lock if the owner information matches.
      *
      * @see cache_is_lockable
@@ -448,7 +473,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     }
 
     public static function ready_to_be_used_for_testing() {
-        return defined('CACHESTORE_REDIS_TEST_SERVER');
+        return defined('TEST_CACHESTORE_REDIS_TESTSERVERS');
     }
 
     /**
@@ -464,7 +489,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             throw new coding_exception('Redis cache store not setup for testing');
         }
         return [
-            'server' => CACHESTORE_REDIS_TEST_SERVER,
+            'server' => TEST_CACHESTORE_REDIS_TESTSERVERS,
             'prefix' => $DB->get_prefix(),
         ];
     }
